@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>Lyria Reader</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Theme variables */
+    html[data-theme="dark"] {
+      --bg: #0f0f0f;
+      --fg: #e8e4dc;
+      --bar-bg: #161616;
+      --bar-border: #1e1e1e;
+      --muted: #555;
+      --muted-2: #333;
+      --chip-border: #232323;
+      --chip-fg: #777;
+      --chip-hover-border: #4a4a4a;
+      --chip-hover-fg: #bbb;
+      --nav-border: #2a2a2a;
+      --nav-fg: #ccc;
+      --counter-fg: #666;
+      --input-bg: #0f0f0f;
+      --input-border: #1e1e1e;
+      --input-fg: #aaa;
+      --input-focus-border: #3a3a3a;
+      --input-active-border: #4a9a6a;
+      --success: #4a9a6a;
+      --section-marker: #555;
+    }
+    html[data-theme="sepia"] {
+      --bg: #f5efe0;
+      --fg: #332a1f;
+      --bar-bg: #ede5d1;
+      --bar-border: #d9cfb5;
+      --muted: #8a7c63;
+      --muted-2: #b5a98b;
+      --chip-border: #c7bb9f;
+      --chip-fg: #6a5f48;
+      --chip-hover-border: #7a6c4f;
+      --chip-hover-fg: #3a3223;
+      --nav-border: #c7bb9f;
+      --nav-fg: #3a3223;
+      --counter-fg: #8a7c63;
+      --input-bg: #fbf6ea;
+      --input-border: #c7bb9f;
+      --input-fg: #3a3223;
+      --input-focus-border: #7a6c4f;
+      --input-active-border: #6a8a4a;
+      --success: #6a8a4a;
+      --section-marker: #8a7c63;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: Georgia, 'Times New Roman', serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    #page {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 60px 40px;
+      overflow: hidden;
+    }
+
+    #text {
+      max-width: 640px;
+      width: 100%;
+      font-size: 1.15rem;
+      line-height: 1.9;
+      opacity: 1;
+      transition: opacity 0.25s ease;
+    }
+    #text p { margin-bottom: 1.1em; }
+    #text p:last-child { margin-bottom: 0; }
+    #text .section-marker {
+      text-align: center;
+      font-variant: small-caps;
+      letter-spacing: 0.35em;
+      color: var(--section-marker);
+      margin: 2.2em 0 1.6em;
+      font-size: 0.95rem;
+    }
+    #text .title-block {
+      text-align: center;
+      margin: 0.2em 0 2.8em;
+    }
+    #text .title-block .book-title {
+      font-size: 1.7rem;
+      font-weight: 600;
+      line-height: 1.3;
+      margin: 0 0 0.9em;
+      color: var(--fg);
+    }
+    #text .title-block .book-author {
+      font-size: 0.85rem;
+      letter-spacing: 0.35em;
+      color: var(--section-marker);
+      text-transform: uppercase;
+      margin: 0 0 2.2em;
+    }
+    #text .title-block .title-divider {
+      border: 0;
+      border-top: 1px solid var(--section-marker);
+      width: 40px;
+      margin: 0 auto 2.2em;
+      opacity: 0.5;
+    }
+    #text.fading { opacity: 0; }
+
+    /* ---- Music nudge bar (dimmed for peripheral weight) ---- */
+    #nudge-bar {
+      background: var(--bar-bg);
+      border-top: 1px solid var(--bar-border);
+      padding: 5px 28px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* Top row: volume + spacer */
+    #nudge-top {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      min-height: 16px;
+    }
+    #volume-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #volume-wrap label { font-size: 0.65rem; color: var(--muted-2); letter-spacing: 0.04em; }
+    #volumeValue { font-size: 0.65rem; color: var(--muted); min-width: 28px; text-align: right; font-variant-numeric: tabular-nums; }
+    #volumeSlider {
+      -webkit-appearance: none;
+      width: 80px; height: 2px;
+      background: var(--chip-border);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    #volumeSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--muted);
+      cursor: pointer;
+    }
+    #volumeSlider:hover::-webkit-slider-thumb { background: var(--chip-hover-fg); }
+
+    /* Bottom row: preset chips + free text */
+    #nudge-bottom {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    #preset-tags {
+      display: flex;
+      gap: 3px;
+      flex-wrap: wrap;
+    }
+    .preset-tag {
+      font-size: 0.68rem;
+      background: none;
+      border: 1px solid var(--chip-border);
+      color: var(--chip-fg);
+      padding: 2px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-family: Georgia, serif;
+      transition: border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .preset-tag:hover:not(:disabled) { border-color: var(--chip-hover-border); color: var(--chip-hover-fg); }
+    .preset-tag:disabled { opacity: 0.3; cursor: default; }
+    #nudge-divider { width: 1px; background: var(--chip-border); height: 16px; flex-shrink: 0; margin: 0 2px; }
+    #nudgeInput {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 3px;
+      color: var(--input-fg);
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      font-family: Georgia, serif;
+      outline: none;
+      min-width: 0;
+      transition: border-color 0.2s;
+    }
+    #nudgeInput:focus { border-color: var(--input-focus-border); }
+    #nudgeInput.submitting { border-color: var(--input-active-border); }
+    #nudgeInput::placeholder { color: var(--muted-2); font-style: italic; }
+    #nudgeBtn {
+      background: none;
+      border: 1px solid var(--chip-border);
+      color: var(--chip-fg);
+      padding: 3px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 0.7rem;
+      white-space: nowrap;
+      min-width: 72px;
+      text-align: center;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #nudgeBtn:hover:not(:disabled) { border-color: var(--chip-hover-border); color: var(--chip-hover-fg); }
+    #nudgeBtn:disabled { opacity: 0.4; cursor: default; }
+    #nudgeBtn.success { border-color: var(--success); color: var(--success); }
+    #revertBtn {
+      background: none; border: 1px solid var(--chip-border); color: var(--chip-fg);
+      padding: 3px 10px; border-radius: 3px; cursor: pointer;
+      font-size: 0.7rem; white-space: nowrap; transition: border-color 0.15s, color 0.15s;
+    }
+    #revertBtn:hover { border-color: var(--chip-hover-border); color: var(--chip-hover-fg); }
+
+    /* ---- Bottom nav ---- */
+    #nav {
+      height: 52px;
+      background: var(--bar-bg);
+      border-top: 1px solid var(--nav-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      flex-shrink: 0;
+      gap: 10px;
+    }
+    #nav-left, #nav-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-btn {
+      background: none;
+      border: 1px solid var(--nav-border);
+      color: var(--nav-fg);
+      padding: 6px 18px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: Georgia, serif;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) { border-color: var(--chip-hover-border); color: var(--fg); }
+    .nav-btn:disabled { opacity: 0.25; cursor: default; }
+    .icon-btn {
+      background: none;
+      border: 1px solid var(--chip-border);
+      color: var(--chip-fg);
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: Georgia, serif;
+      min-width: 32px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .icon-btn:hover { border-color: var(--chip-hover-border); color: var(--chip-hover-fg); }
+    #counter { font-size: 0.8rem; color: var(--counter-fg); letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
+    #finishBtn { border-color: var(--success); color: var(--success); }
+    #finishBtn:hover { border-color: var(--success); color: var(--success); opacity: 0.85; }
+
+    /* ---- Status indicator ---- */
+    #status-dot {
+      position: fixed;
+      top: 14px; right: 18px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--muted-2);
+      transition: background 0.4s, box-shadow 0.4s;
+      z-index: 50;
+    }
+    #status-dot.playing { background: var(--success); box-shadow: 0 0 8px var(--success); }
+    #status-dot.paused { background: #c98a3a; box-shadow: 0 0 6px #c98a3a; }
+
+    /* ---- Reconnect notice ---- */
+    #reconnect-notice {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #1a1200;
+      border-bottom: 1px solid #3a2e00;
+      color: #a07820;
+      font-size: 0.75rem;
+      text-align: center;
+      padding: 6px;
+      z-index: 100;
+      letter-spacing: 0.03em;
+    }
+    #reconnect-notice.urgent {
+      background: #2a0808;
+      border-bottom-color: #6a1a1a;
+      color: #e47070;
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 10px;
+    }
+    html[data-theme="sepia"] #reconnect-notice {
+      background: #f5e6c7;
+      border-bottom-color: #c9a961;
+      color: #8a6820;
+    }
+    html[data-theme="sepia"] #reconnect-notice.urgent {
+      background: #f5d0d0;
+      border-bottom-color: #c96161;
+      color: #8a2020;
+    }
+  </style>
+</head>
+<body>
+
+<div id="reconnect-notice">Music reconnecting...</div>
+<div id="status-dot"></div>
+<div id="page"><div id="text">Loading...</div></div>
+
+<div id="nudge-bar">
+  <div id="nudge-top">
+    <div id="volume-wrap">
+      <label>Vol</label>
+      <input type="range" id="volumeSlider" min="0" max="100" value="20">
+      <span id="volumeValue">20%</span>
+    </div>
+  </div>
+  <div id="nudge-bottom">
+    <div id="preset-tags">
+      <button class="preset-tag" disabled data-instruction="make it darker and more ominous">darker</button>
+      <button class="preset-tag" disabled data-instruction="make it brighter and more hopeful">brighter</button>
+      <button class="preset-tag" disabled data-instruction="make it more tense and urgent">tense</button>
+      <button class="preset-tag" disabled data-instruction="make it more peaceful and calm">calm</button>
+      <button class="preset-tag" disabled data-instruction="make it quieter and more sparse">quieter</button>
+      <button class="preset-tag" disabled data-instruction="make it feel faster and more energetic">faster</button>
+      <button class="preset-tag" disabled data-instruction="make it feel slower and more still">slower</button>
+    </div>
+    <div id="nudge-divider"></div>
+    <input id="nudgeInput" type="text" placeholder="e.g., darker, jazz, more strings..." autocomplete="off">
+    <button id="nudgeBtn" disabled>Apply</button>
+    <button id="revertBtn" style="display:none" title="Reset this segment to its original music">Reset</button>
+  </div>
+</div>
+
+<div id="nav">
+  <div id="nav-left">
+    <button class="nav-btn" id="prevBtn" onclick="navigate(-1)" disabled>&larr; Prev</button>
+    <button class="icon-btn" id="pauseBtn" title="Pause reading & music">Pause</button>
+  </div>
+  <span id="counter">- / -</span>
+  <div id="nav-right">
+    <button class="icon-btn" id="themeBtn" title="Toggle theme">Theme</button>
+    <button class="nav-btn" id="nextBtn" onclick="navigate(1)" disabled>Next &rarr;</button>
+    <button class="nav-btn" id="finishBtn" onclick="finishSession()" style="display:none">Finish</button>
+  </div>
+</div>
+
+<script>
+const params     = new URLSearchParams(location.search);
+const BOOK       = params.get('book') || '';
+const BLEND_SECS = parseFloat(params.get('blend') || '10');
+const FIXED_BPM   = 80;  // Fixed for the session — BPM changes require a context reset in Lyria
+
+// pages[i] = { paras, segmentIdx, segmentNumber }
+let pages         = [];
+let segmentTexts  = [];   // [{segmentNumber, text}] — cached for repagination
+let prompts       = {};   // segmentNumber → {prompt, negative_prompt} (original, locked)
+let nudgedPrompts = {};   // segmentNumber → {prompt, negative_prompt} (reader edits, session-scoped)
+let currentPage   = 0;
+let playerRunning = false;
+let playerPaused  = false;
+let currentPrompt = '';
+let currentNeg    = '';
+let blendGeneration = 0;  // increment to cancel in-flight blends
+let resumeOnNavigate = false;
+
+// ============================================================
+// Measure-based pagination
+// ============================================================
+const probe = document.createElement('div');
+probe.setAttribute('aria-hidden', 'true');
+Object.assign(probe.style, {
+  position:   'absolute',
+  visibility: 'hidden',
+  pointerEvents: 'none',
+  top: '0', left: '0',
+  fontFamily: 'Georgia, "Times New Roman", serif',
+  fontSize:   '1.15rem',
+  lineHeight: '1.9',
+});
+const probeStyle = document.createElement('style');
+probeStyle.textContent = '#probe-el { font-size: 1.15rem; line-height: 1.9; } #probe-el p { margin-bottom: 1.1em; } #probe-el p:last-child { margin-bottom: 0; } #probe-el .section-marker { text-align: center; letter-spacing: 0.35em; margin: 2.2em 0 1.6em; font-size: 0.95rem; } #probe-el .title-block { text-align: center; margin: 0.2em 0 2.8em; } #probe-el .title-block .book-title { font-size: 1.7rem; font-weight: 600; line-height: 1.3; margin: 0 0 0.9em; } #probe-el .title-block .book-author { font-size: 0.85rem; letter-spacing: 0.35em; margin: 0 0 2.2em; } #probe-el .title-block .title-divider { border: 0; border-top: 1px solid #888; width: 40px; margin: 0 auto 2.2em; }';
+document.head.appendChild(probeStyle);
+probe.id = 'probe-el';
+document.body.appendChild(probe);
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Roman numeral-only line (I, II, III, IV, V, ... or their lowercase/dotted forms) → section marker
+const ROMAN_ONLY = /^\s*[ivxlcIVXLC]+\.?\s*$/;
+
+function textToParas(text) {
+  // Segments are pre-cleaned during PDF splitting: paragraphs are
+  // separated by blank lines, soft wraps already collapsed.
+  return text.replace(/\r\n?/g, '\n')
+    .split(/\n{2,}/)
+    .map(p => p.trim())
+    .filter(Boolean);
+}
+
+function getPageDimensions() {
+  const navH   = document.getElementById('nav').offsetHeight;
+  const nudgeH = document.getElementById('nudge-bar').offsetHeight;
+  const padV   = 140; // 60px top + 60px bottom + 20px safety buffer
+  const maxH   = Math.max(200, window.innerHeight - navH - nudgeH - padV);
+  const maxW   = Math.min(640, window.innerWidth - 80);
+  return { maxH, maxW };
+}
+
+// Detect "<Title> <AUTHOR ALL CAPS> <roman numeral> <body…>" mashed into one
+// paragraph and split it into a title block + section marker + body paragraph.
+// Returns null if the pattern doesn't match.
+function extractTitleBlock(para) {
+  const m = para.match(/^(.+?)\s+([A-Z][A-Z\s'.]{2,}[A-Z])\s+([ivxIVX]{1,6})\s+(.+)$/s);
+  if (!m) return null;
+  const [, title, author, section, body] = m;
+  // Guard: title should be short-ish and not end with a sentence-ending period.
+  if (title.length > 120 || /[.!?]$/.test(title.trim())) return null;
+  return { title: title.trim(), author: author.trim(), section: section.trim(), body: body.trim() };
+}
+
+function parasToHtml(paras, opts = {}) {
+  return paras.map((p, i) => {
+    if (opts.isFirstPage && i === 0) {
+      const tb = extractTitleBlock(p);
+      if (tb) {
+        return (
+          `<div class="title-block">` +
+            `<h1 class="book-title">${esc(tb.title)}</h1>` +
+            `<div class="book-author">${esc(tb.author)}</div>` +
+            `<hr class="title-divider">` +
+          `</div>` +
+          `<p class="section-marker">${esc(tb.section.toUpperCase())}</p>` +
+          `<p>${esc(tb.body)}</p>`
+        );
+      }
+    }
+    if (ROMAN_ONLY.test(p)) {
+      return `<p class="section-marker">${esc(p.replace(/\.$/, '').toUpperCase().trim())}</p>`;
+    }
+    return `<p>${esc(p)}</p>`;
+  }).join('');
+}
+
+// Split a paragraph into sentences at ". ", "! ", "? " (and closing quote
+// variants) followed by a capital letter, quote, or em-dash. Falls back to
+// the whole paragraph if no split points are found.
+function splitSentences(para) {
+  const parts = para.split(/(?<=[.!?][)"'”’\]]*)\s+(?=[A-Z"'“‘—])/);
+  return parts.map(s => s.trim()).filter(Boolean);
+}
+
+// Group sentence-level units on a page into paragraphs for rendering:
+// consecutive units sharing paraIdx collapse back into one <p>.
+function groupUnitsToParas(pageUnits) {
+  const out = [];
+  let lastIdx = -1;
+  for (const u of pageUnits) {
+    if (u.paraIdx === lastIdx && !u.isSection) {
+      out[out.length - 1] = out[out.length - 1] + ' ' + u.text;
+    } else {
+      out.push(u.text);
+      lastIdx = u.paraIdx;
+    }
+  }
+  return out;
+}
+
+const $text    = document.getElementById('text');
+const $counter = document.getElementById('counter');
+const $prev    = document.getElementById('prevBtn');
+const $next    = document.getElementById('nextBtn');
+const $dot     = document.getElementById('status-dot');
+
+// ============================================================
+// Init
+// ============================================================
+async function init() {
+  if (!BOOK) {
+    $text.textContent = 'No book specified. Open /reader?book=<slug>';
+    return;
+  }
+
+  // Restore saved theme
+  const savedTheme = localStorage.getItem('reader-theme');
+  if (savedTheme === 'sepia') setTheme('sepia');
+
+  const segs = await fetch(`/segments/${BOOK}`).then(r => r.json());
+  if (!Array.isArray(segs) || segs.length === 0) {
+    $text.textContent = `No segments found for "${BOOK}".`;
+    return;
+  }
+
+  for (const seg of segs) {
+    const n = seg.segment_number;
+    const p = await fetch(`/prompts/${BOOK}/${n}`).then(r => r.ok ? r.json() : null);
+    if (p && !p.error) prompts[n] = p;
+  }
+
+  $text.textContent = 'Loading text...';
+  for (let si = 0; si < segs.length; si++) {
+    const seg = segs[si];
+    const n = seg.segment_number;
+    const data = await fetch(`/segments/${BOOK}/${n}/text`).then(r => r.json());
+    segmentTexts.push({ segmentNumber: n, segmentIdx: si, text: data.text || '' });
+  }
+
+  buildPages();
+  showPage(0, false);
+  updateNav();
+  await startPlayer();
+}
+
+function buildPages() {
+  // Strict per-segment pagination: each segment starts on a fresh page, and
+  // no page mixes content from two segments. A segment's last page may be
+  // short — that's deliberate so music and text stay aligned.
+  const { maxH, maxW } = getPageDimensions();
+  probe.style.width = maxW + 'px';
+
+  pages = [];
+  let globalParaIdx = 0;
+
+  const pushPage = (pageUnits, segmentIdx, segmentNumber) => {
+    pages.push({
+      paras: groupUnitsToParas(pageUnits),
+      segmentIdx, segmentNumber,
+    });
+  };
+
+  for (const st of segmentTexts) {
+    const paras = textToParas(st.text);
+    const units = [];
+    for (const para of paras) {
+      const pi = globalParaIdx++;
+      if (ROMAN_ONLY.test(para)) {
+        units.push({
+          segmentNumber: st.segmentNumber, segmentIdx: st.segmentIdx,
+          paraIdx: pi, text: para, isSection: true,
+        });
+      } else {
+        for (const s of splitSentences(para)) {
+          units.push({
+            segmentNumber: st.segmentNumber, segmentIdx: st.segmentIdx,
+            paraIdx: pi, text: s, isSection: false,
+          });
+        }
+      }
+    }
+
+    let current = [];
+    for (const u of units) {
+      probe.innerHTML = parasToHtml(groupUnitsToParas([...current, u]), { isFirstPage: pages.length === 0 });
+      if (current.length > 0 && probe.offsetHeight > maxH) {
+        pushPage(current, st.segmentIdx, st.segmentNumber);
+        current = [u];
+      } else {
+        current.push(u);
+      }
+    }
+    if (current.length) pushPage(current, st.segmentIdx, st.segmentNumber);
+  }
+}
+
+function repaginate() {
+  if (segmentTexts.length === 0) return;
+  const prevSegNum = pages[currentPage]?.segmentNumber;
+  buildPages();
+  let newIdx = pages.findIndex(p => p.segmentNumber === prevSegNum);
+  if (newIdx < 0) newIdx = Math.min(currentPage, pages.length - 1);
+  currentPage = newIdx;
+  $text.innerHTML = parasToHtml(pages[currentPage].paras, { isFirstPage: currentPage === 0 });
+  $counter.textContent = `${currentPage + 1} / ${pages.length}`;
+  updateNav();
+}
+
+// Return the prompt that should play for a given segment (nudged > locked)
+function promptForSegment(segNum) {
+  return nudgedPrompts[segNum] || prompts[segNum] || null;
+}
+
+// ============================================================
+// Page display
+// ============================================================
+async function showPage(idx, animate = true) {
+  const pg = pages[idx];
+
+  if (animate) {
+    $text.classList.add('fading');
+    await sleep(250);
+  }
+
+  $text.innerHTML = parasToHtml(pg.paras, { isFirstPage: idx === 0 });
+  if (animate) $text.classList.remove('fading');
+
+  currentPage = idx;
+  $counter.textContent = `${idx + 1} / ${pages.length}`;
+  updateNav();
+
+  const p = promptForSegment(pg.segmentNumber);
+  if (p) {
+    currentPrompt = p.prompt || '';
+    currentNeg    = p.negative_prompt || '';
+  }
+  setNudgeEnabled(!!currentPrompt && !playerPaused);
+
+}
+
+// ============================================================
+// Navigation
+// ============================================================
+async function navigate(dir) {
+  const nextIdx = currentPage + dir;
+  if (nextIdx < 0 || nextIdx >= pages.length) return;
+
+  const fromPage = pages[currentPage];
+  const toPage   = pages[nextIdx];
+  const actuallyPlaying = currentPrompt;
+
+  await showPage(nextIdx);
+
+  if (toPage.segmentNumber !== fromPage.segmentNumber) {
+    const toP = promptForSegment(toPage.segmentNumber) || {};
+    const toPrompt = toP.prompt || '';
+
+    if (playerRunning && !playerPaused && actuallyPlaying && toPrompt) {
+      currentPrompt = toPrompt;
+      currentNeg    = toP.negative_prompt || '';
+      startBlend(actuallyPlaying, toPrompt, toP.negative_prompt || '');
+    } else if (playerRunning && !playerPaused && toPrompt) {
+      await pushConfig(toPrompt, toP.negative_prompt || '');
+    }
+  }
+}
+
+// ============================================================
+// Blend (non-blocking, cancellable)
+// ============================================================
+function startBlend(fromPrompt, toPrompt, toNeg) {
+  const myGen = ++blendGeneration;
+  const steps = Math.round(BLEND_SECS * 10);
+  let i = 0;
+
+  function step() {
+    if (myGen !== blendGeneration) return;
+    if (i > steps) {
+      fetch('/player/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: toPrompt,
+          negative_prompt: toNeg,
+          transition_mode: 'smooth',
+        }),
+      }).catch(() => {});
+      return;
+    }
+
+    const w = i / steps;
+    fetch('/player/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: fromPrompt,
+        prompt_b: toPrompt,
+        transition_mode: 'blend',
+        blend_weight: w,
+      }),
+    }).catch(() => {});
+    i++;
+    setTimeout(step, 100);
+  }
+  step();
+}
+
+// ============================================================
+// Player
+// ============================================================
+async function startPlayer() {
+  const status = await fetch('/player/status').then(r => r.json());
+  if (status.running) {
+    playerRunning = true;
+    $dot.classList.add('playing');
+    return;
+  }
+
+  const pg  = pages[currentPage] || pages[0];
+  const p   = promptForSegment(pg?.segmentNumber) || {};
+  const initConfig = {
+    prompt:          p.prompt || 'gentle ambient music, quiet and warm',
+    negative_prompt: p.negative_prompt || '',
+    bpm:             FIXED_BPM,
+    density:         0.3,
+    brightness:      0.3,
+    guidance:        4.7,
+    temperature:     2.4,
+    mute_drums:      true,
+    mute_bass:       false,
+  };
+
+  const r = await fetch('/player/start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(initConfig),
+  }).then(r => r.json());
+
+  if (!r.error) {
+    playerRunning = true;
+    $dot.classList.add('playing');
+    currentPrompt = initConfig.prompt;
+    await sleep(1500);
+  }
+}
+
+async function pushConfig(prompt, negative) {
+  await fetch('/player/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt,
+      negative_prompt: negative || '',
+      transition_mode: 'smooth',
+    }),
+  });
+}
+
+// ============================================================
+// Pause / Resume
+// ============================================================
+const $pause = document.getElementById('pauseBtn');
+$pause.addEventListener('click', async () => {
+  if (playerPaused) {
+    await fetch('/player/resume', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {});
+    playerPaused = false;
+    $pause.textContent = 'Pause';
+    $dot.classList.remove('paused');
+    if (playerRunning) $dot.classList.add('playing');
+    setNudgeEnabled(!!currentPrompt);
+  } else {
+    await fetch('/player/pause', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {});
+    playerPaused = true;
+    $pause.textContent = 'Resume';
+    $dot.classList.remove('playing');
+    $dot.classList.add('paused');
+    setNudgeEnabled(false);
+  }
+});
+
+// ============================================================
+// Theme toggle
+// ============================================================
+const $theme = document.getElementById('themeBtn');
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  $theme.textContent = t === 'sepia' ? 'Light' : 'Dark';
+  $theme.title = t === 'sepia' ? 'Switch to dark theme' : 'Switch to sepia theme';
+  localStorage.setItem('reader-theme', t);
+  if (pages.length) setTimeout(repaginate, 50);
+}
+$theme.addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = cur === 'dark' ? 'sepia' : 'dark';
+  setTheme(next);
+});
+
+// ============================================================
+// Helpers
+// ============================================================
+function updateNav() {
+  $prev.disabled = currentPage <= 0;
+  const isLast = currentPage >= pages.length - 1;
+  $next.disabled = isLast;
+  document.getElementById('finishBtn').style.display = isLast ? '' : 'none';
+  $next.style.display = isLast ? 'none' : '';
+  if (typeof updateRevertVisibility === 'function') updateRevertVisibility();
+}
+
+async function finishSession() {
+  fetch('/player/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {});
+  alert('Reading session complete.');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ============================================================
+// Volume slider
+// ============================================================
+const $volume     = document.getElementById('volumeSlider');
+const $volumeVal  = document.getElementById('volumeValue');
+let volumeThrottleTimer = null;
+let pendingVolume = null;
+
+function updateVolumeDisplay() {
+  $volumeVal.textContent = `${$volume.value}%`;
+}
+
+function sendVolume(v) {
+  fetch('/player/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ volume: v }),
+  }).catch(() => {});
+}
+
+// Throttle: send instantly on first change, coalesce mid-drag to every ~60ms,
+// and always send a final value on release (change event).
+$volume.addEventListener('input', () => {
+  updateVolumeDisplay();
+  const vol = parseInt($volume.value) / 100;
+  pendingVolume = vol;
+
+  if (!volumeThrottleTimer) {
+    sendVolume(vol);
+    pendingVolume = null;
+    volumeThrottleTimer = setTimeout(() => {
+      volumeThrottleTimer = null;
+      if (pendingVolume !== null) {
+        sendVolume(pendingVolume);
+        pendingVolume = null;
+      }
+    }, 60);
+  }
+});
+
+$volume.addEventListener('change', () => {
+  const vol = parseInt($volume.value) / 100;
+  sendVolume(vol);  // guarantees final value on release
+});
+updateVolumeDisplay();
+
+// ============================================================
+// Music nudge
+// ============================================================
+const $nudgeBtn    = document.getElementById('nudgeBtn');
+const $nudgeInput  = document.getElementById('nudgeInput');
+const $revertBtn   = document.getElementById('revertBtn');
+
+function setNudgeEnabled(enabled) {
+  $nudgeBtn.disabled = !enabled;
+  $nudgeInput.disabled = !enabled;
+  document.querySelectorAll('.preset-tag').forEach(b => b.disabled = !enabled);
+}
+
+function updateRevertVisibility() {
+  const segNum = pages[currentPage]?.segmentNumber;
+  $revertBtn.style.display = (segNum != null && nudgedPrompts[segNum]) ? '' : 'none';
+}
+
+async function revertNudge() {
+  const segNum = pages[currentPage]?.segmentNumber;
+  if (segNum == null || !nudgedPrompts[segNum]) return;
+  const base = prompts[segNum];
+  if (!base) return;
+  delete nudgedPrompts[segNum];
+  currentPrompt = base.prompt;
+  currentNeg    = base.negative_prompt || '';
+  try {
+    await fetch('/player/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: currentPrompt, negative_prompt: currentNeg, transition_mode: 'smooth' }),
+    });
+  } catch(e) { console.error('reset config push failed:', e); }
+  updateRevertVisibility();
+}
+
+$revertBtn.addEventListener('click', revertNudge);
+
+let successResetTimer;
+
+async function doNudge(instruction) {
+  instruction = instruction || $nudgeInput.value.trim();
+  if (!instruction || !currentPrompt || playerPaused) return;
+
+  clearTimeout(successResetTimer);
+  setNudgeEnabled(false);
+  $nudgeBtn.classList.remove('success');
+  $nudgeBtn.textContent = 'Applying...';
+  $nudgeInput.classList.add('submitting');
+
+  try {
+    const res = await fetch('/refine-prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: currentPrompt, negative_prompt: currentNeg, instruction }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    currentPrompt = data.prompt;
+    currentNeg    = data.negative_prompt || currentNeg;
+
+    // Remember nudge for this segment so it persists across navigation
+    const segNum = pages[currentPage]?.segmentNumber;
+    if (segNum != null) {
+      nudgedPrompts[segNum] = { prompt: currentPrompt, negative_prompt: currentNeg };
+    }
+
+    await fetch('/player/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: currentPrompt, negative_prompt: currentNeg, transition_mode: 'smooth' }),
+    });
+
+    $nudgeInput.value = '';
+    $nudgeBtn.textContent = 'Applied';
+    $nudgeBtn.classList.add('success');
+    successResetTimer = setTimeout(() => {
+      $nudgeBtn.classList.remove('success');
+      $nudgeBtn.textContent = 'Apply';
+    }, 3000);
+
+    updateRevertVisibility();
+  } catch(e) {
+    $nudgeBtn.textContent = 'Error';
+    successResetTimer = setTimeout(() => { $nudgeBtn.textContent = 'Apply'; }, 2000);
+    console.error('Nudge failed:', e);
+  } finally {
+    $nudgeInput.classList.remove('submitting');
+    setNudgeEnabled(!!currentPrompt && !playerPaused);
+  }
+}
+
+$nudgeBtn.addEventListener('click', () => doNudge());
+$nudgeInput.addEventListener('keydown', e => { if (e.key === 'Enter') doNudge(); });
+document.querySelectorAll('.preset-tag').forEach(btn => {
+  btn.addEventListener('click', () => doNudge(btn.dataset.instruction));
+});
+
+// ============================================================
+// Repagination triggers
+// ============================================================
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(repaginate, 400);
+});
+
+// ResizeObserver on the nudge bar — its height changes when preset chips wrap,
+// which would otherwise cause text to clip under it.
+const nudgeBar = document.getElementById('nudge-bar');
+let lastNudgeH = nudgeBar.offsetHeight;
+let nudgeResizeTimer;
+new ResizeObserver(() => {
+  const h = nudgeBar.offsetHeight;
+  if (Math.abs(h - lastNudgeH) < 2) return;
+  lastNudgeH = h;
+  clearTimeout(nudgeResizeTimer);
+  nudgeResizeTimer = setTimeout(repaginate, 200);
+}).observe(nudgeBar);
+
+// ============================================================
+// Poll player status
+// ============================================================
+const $notice = document.getElementById('reconnect-notice');
+let audioEverAlive = false;
+let dropStartMs = null;
+const DROP_ESCALATE_MS = 20000;
+const DROP_RESTART_MS = 8000;
+let restartInFlight = false;
+
+setInterval(async () => {
+  const s = await fetch('/player/status').then(r => r.json()).catch(() => ({ running: false, audio_alive: false }));
+  playerRunning = s.running;
+
+  if (!s.running && !playerPaused && pages.length && !restartInFlight) {
+    restartInFlight = true;
+    startPlayer().finally(() => {
+      setTimeout(() => { restartInFlight = false; }, 5000);
+    });
+    return;
+  }
+
+  // Only start judging "drops" once audio has been alive at least once,
+  // so the banner doesn't appear during normal startup.
+  if (s.audio_alive) audioEverAlive = true;
+
+  const dropped = audioEverAlive && !s.audio_alive && !playerPaused;
+
+  if (dropped) {
+    if (dropStartMs === null) {
+      dropStartMs = Date.now();
+    }
+    const elapsed = Date.now() - dropStartMs;
+    if (elapsed >= DROP_RESTART_MS && !restartInFlight) {
+      restartInFlight = true;
+      fetch('/player/restart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      }).catch(() => {}).finally(() => {
+        setTimeout(() => { restartInFlight = false; }, 5000);
+      });
+    }
+    if (elapsed >= DROP_ESCALATE_MS) {
+      $notice.textContent = 'Music disconnected - could not reconnect.';
+      $notice.classList.add('urgent');
+    } else {
+      $notice.textContent = 'Music dropped - reconnecting...';
+      $notice.classList.remove('urgent');
+    }
+    $notice.style.display = 'block';
+  } else {
+    dropStartMs = null;
+    $notice.style.display = 'none';
+    $notice.classList.remove('urgent');
+  }
+
+  if (!playerPaused) {
+    // Green dot only when audio is actually flowing.
+    $dot.classList.toggle('playing', !!s.audio_alive);
+  }
+}, 1000);
+
+init();
+</script>
+</body>
+</html>
+

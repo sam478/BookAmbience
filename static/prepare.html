@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lyria — Prepare Book</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f1a; color: #d0d0d0; font-size: 14px;
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+      padding: 40px 24px 60px;
+    }
+
+    .topbar {
+      width: 100%; max-width: 680px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 40px;
+    }
+    .topbar h1 { font-size: 1rem; color: #fff; }
+    .topbar h1 span { color: #6c5ce7; }
+    .topbar-nav { display: flex; gap: 16px; }
+    .topbar-nav a { color: #555; font-size: 0.82rem; text-decoration: none; }
+    .topbar-nav a:hover { color: #9d8bff; }
+
+    .card {
+      width: 100%; max-width: 680px;
+      background: #13131f; border: 1px solid #1e1e30;
+      border-radius: 10px; padding: 24px; margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: #555; margin-bottom: 16px;
+    }
+
+    /* Upload zone */
+    .upload-zone {
+      border: 2px dashed #2a2a48; border-radius: 8px;
+      padding: 40px 24px; text-align: center; cursor: pointer;
+      color: #555; transition: border-color 0.2s, color 0.2s;
+      margin-bottom: 16px;
+    }
+    .upload-zone:hover { border-color: #4a3a88; color: #888; }
+    .upload-zone.drag-over { border-color: #6c5ce7; color: #9d8bff; }
+    .upload-zone.has-file { border-color: #2a6a3a; color: #4a9a6a; }
+    .upload-zone input[type="file"] { display: none; }
+    .upload-zone .hint { font-size: 0.75rem; margin-top: 6px; color: #444; }
+
+    /* Config row */
+    .config-row {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .config-row label { font-size: 0.78rem; color: #666; white-space: nowrap; }
+    .config-row input[type="range"] { flex: 1; min-width: 80px; accent-color: #6c5ce7; }
+    .val { font-size: 0.78rem; color: #9d8bff; min-width: 20px; }
+    .config-row input[type="number"] { width: 62px; text-align: center; }
+    .config-row select { flex: 1; }
+
+    /* Buttons */
+    button {
+      padding: 7px 16px; border-radius: 5px; border: none;
+      cursor: pointer; font-size: 0.82rem; font-weight: 500;
+      transition: opacity 0.15s;
+    }
+    button:disabled { opacity: 0.3; cursor: default; }
+    .btn-primary { background: #6c5ce7; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #7d6ef0; }
+    .btn-success { background: #1a6b36; color: #cdecd6; }
+    .btn-success:hover:not(:disabled) { background: #1f7d40; }
+    .btn-sec { background: #1e1e30; color: #aaa; border: 1px solid #2a2a40; }
+    .btn-sec:hover:not(:disabled) { background: #252538; color: #ccc; }
+
+    /* Status / progress */
+    .status { font-size: 0.78rem; margin-top: 8px; min-height: 1.2em; }
+    .status.ok   { color: #4a9a6a; }
+    .status.err  { color: #e05555; }
+    .status.info { color: #7799cc; }
+    .status.warn { color: #c97f30; }
+
+    .progress-wrap {
+      background: #1a1a2a; border-radius: 4px; height: 6px;
+      margin-top: 12px; overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%; width: 0%; background: #6c5ce7;
+      transition: width 0.3s ease;
+    }
+    .progress-label { font-size: 0.75rem; color: #666; margin-top: 6px; }
+
+    /* Open button (shown when ready) */
+    .open-btn-wrap { margin-top: 20px; display: none; }
+
+    hr { border: none; border-top: 1px solid #1e1e30; margin: 20px 0; }
+
+    /* Segment breakdown */
+    .seg-row {
+      border-bottom: 1px solid #1a1a2a; padding: 12px 0;
+    }
+    .seg-row:last-child { border-bottom: none; }
+    .seg-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 5px; flex-wrap: wrap;
+    }
+    .seg-num { font-size: 0.75rem; color: #555; min-width: 28px; }
+    .seg-summary { font-size: 0.85rem; color: #ccc; flex: 1; }
+    .badge {
+      font-size: 0.68rem; padding: 2px 7px; border-radius: 10px;
+      background: #1a1a2a; border: 1px solid #2a2a40; color: #888;
+      white-space: nowrap;
+    }
+    .intensity-bar-wrap {
+      height: 3px; background: #1a1a2a; border-radius: 2px;
+      margin: 6px 0 5px; overflow: hidden;
+    }
+    .intensity-bar { height: 100%; background: #6c5ce7; border-radius: 2px; }
+    .boundary-reason {
+      font-size: 0.78rem; color: #556; font-style: italic;
+      padding-left: 2px;
+    }
+
+    select, input[type="number"] {
+      background: #0d0d18; border: 1px solid #2a2a42; color: #ccc;
+      padding: 5px 8px; border-radius: 4px; font-size: 0.82rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Lyria <span>Prepare</span></h1>
+  <nav class="topbar-nav">
+    <a href="/reader">← Reader</a>
+  </nav>
+</div>
+
+<!-- Step 1: Upload & Split -->
+<div class="card">
+  <div class="card-title">AI Provider</div>
+  <div class="config-row">
+    <label>Provider</label>
+    <select id="providerSelect"><option value="">Loading…</option></select>
+  </div>
+  <div class="config-row">
+    <label>Model</label>
+    <select id="modelSelect"><option value="">—</option></select>
+  </div>
+  <div class="config-row" title="Model used for on-the-fly nudges during a reading session. Groq models recommended for speed.">
+    <label>Nudge provider</label>
+    <select id="nudgeProviderSelect"><option value="">Loading…</option></select>
+  </div>
+  <div class="config-row">
+    <label>Nudge model</label>
+    <select id="nudgeModelSelect"><option value="">—</option></select>
+  </div>
+</div>
+
+<div class="card" id="existingBooksCard" style="display:none">
+  <div class="card-title">Existing books</div>
+  <div id="existingBooksList"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">1 — Upload &amp; Segment PDF</div>
+
+  <div class="upload-zone" id="uploadZone" onclick="document.getElementById('pdfInput').click()">
+    <input type="file" id="pdfInput" accept=".pdf">
+    <div id="uploadText">Drop PDF here or click to browse</div>
+    <div class="hint">PDF only — project Gutenberg works well</div>
+  </div>
+
+  <div id="splitOpts" style="display:none">
+    <div class="config-row">
+      <label>Page range</label>
+      <input type="number" id="pageStart" min="1" placeholder="from">
+      <span style="color:#444">–</span>
+      <input type="number" id="pageEnd" min="1" placeholder="to">
+      <span class="val" id="pageCountHint" style="color:#555"></span>
+    </div>
+    <button class="btn-primary" id="splitBtn" disabled>Split PDF</button>
+    <div class="status" id="splitStatus"></div>
+  </div>
+</div>
+
+<!-- Step 1b: Segment breakdown (shown after split) -->
+<div class="card" id="segBreakdown" style="display:none">
+  <div class="card-title">Segmentation result</div>
+  <div id="segList"></div>
+</div>
+
+<!-- Step 2: Generate Prompts (shown after split) -->
+<div class="card" id="generateCard" style="display:none">
+  <div class="card-title">2 — Generate Music Prompts</div>
+
+  <div class="config-row">
+    <label>Style</label>
+    <select id="styleSelect">
+      <option value="">Auto (no style)</option>
+      <option value="classical">Classical / Orchestral</option>
+      <option value="celtic">Celtic / Folk</option>
+      <option value="jazz">Jazz / Noir</option>
+      <option value="ambient">Ambient / Minimalist</option>
+      <option value="horror">Horror / Gothic</option>
+      <option value="japanese">Japanese / East Asian</option>
+      <option value="middle_eastern">Middle Eastern</option>
+      <option value="scifi">Sci-fi / Electronic</option>
+    </select>
+  </div>
+
+  <button class="btn-success" id="generateBtn">Generate Prompts</button>
+  <button class="btn-success" id="regenerateBtn" style="background:#665; margin-left:6px">Regenerate All</button>
+
+  <div class="progress-wrap" id="progressWrap" style="display:none">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+  <div class="progress-label" id="progressLabel"></div>
+  <div class="status" id="generateStatus"></div>
+  <div id="failedSegments" style="display:none; margin-top:12px"></div>
+
+  <div class="open-btn-wrap" id="openBtnWrap">
+    <hr>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn-sec" id="openReaderBtn" onclick="openReader()">Open Reader →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentBook = null;
+let totalSegments = 0;
+let uploadedPageCount = 0;
+let pendingFile = null;
+let generating = false;
+let pollInterval = null;
+
+function setStatus(id, msg, cls = '') {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status ' + cls;
+}
+
+// ── Upload ──────────────────────────────────────
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+document.getElementById('pdfInput').addEventListener('change', e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+async function handleFile(file) {
+  if (!file.name.toLowerCase().endsWith('.pdf')) {
+    setStatus('splitStatus', 'Only PDF files are supported.', 'err');
+    return;
+  }
+  pendingFile = file;
+  zone.classList.add('has-file');
+  document.getElementById('uploadText').textContent = file.name;
+  document.getElementById('splitOpts').style.display = 'block';
+  setStatus('splitStatus', 'Uploading…', 'info');
+
+  try {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch('/upload', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    uploadedPageCount = data.page_count;
+    document.getElementById('pageEnd').max = uploadedPageCount;
+    document.getElementById('pageStart').max = uploadedPageCount;
+    document.getElementById('pageCountHint').textContent = `${uploadedPageCount} pages`;
+    document.getElementById('splitBtn').disabled = false;
+    setStatus('splitStatus', `Ready — ${uploadedPageCount} pages total`, 'ok');
+  } catch(e) {
+    setStatus('splitStatus', `Upload failed: ${e.message}`, 'err');
+  }
+}
+
+// ── Split ──────────────────────────────────────
+document.getElementById('splitBtn').addEventListener('click', async () => {
+  if (!pendingFile) return;
+  const btn = document.getElementById('splitBtn');
+  btn.disabled = true; btn.textContent = 'Splitting…';
+  setStatus('splitStatus', 'Splitting PDF…', 'info');
+
+  const pageStart = parseInt(document.getElementById('pageStart').value) || null;
+  const pageEnd   = parseInt(document.getElementById('pageEnd').value) || null;
+
+  if (pageStart && pageEnd && pageStart > pageEnd) {
+    setStatus('splitStatus', 'Start page must be before end page.', 'err');
+    btn.disabled = false; btn.textContent = 'Split PDF';
+    return;
+  }
+
+  try {
+    const res = await fetch('/split', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: pendingFile.name,
+        page_start: pageStart,
+        page_end: pageEnd,
+        provider: document.getElementById('providerSelect').value || null,
+        model: document.getElementById('modelSelect').value || null,
+      }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    currentBook = data.book_slug;
+    totalSegments = (data.segments || []).length;
+
+    setStatus('splitStatus', `Done — ${totalSegments} segments`, 'ok');
+    btn.textContent = 'Split PDF';
+    btn.disabled = false;
+
+    renderSegmentBreakdown(data.segments || []);
+
+    document.getElementById('generateCard').style.display = 'block';
+    document.getElementById('segBreakdown').scrollIntoView({ behavior: 'smooth' });
+  } catch(e) {
+    setStatus('splitStatus', `Split failed: ${e.message}`, 'err');
+    btn.disabled = false; btn.textContent = 'Split PDF';
+  }
+});
+
+// ── Providers ──────────────────────────────────
+let loadedProviders = [];
+
+async function loadProviders() {
+  try {
+    const [pRes, sRes] = await Promise.all([fetch('/providers'), fetch('/settings')]);
+    const providers = await pRes.json();
+    const settings = await sRes.json();
+    loadedProviders = providers;
+
+    const pSel = document.getElementById('providerSelect');
+    pSel.innerHTML = '';
+    providers.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.id; o.textContent = p.name;
+      pSel.appendChild(o);
+    });
+    if (providers.length) updateModels(providers[0]);
+    pSel.addEventListener('change', () => {
+      const p = providers.find(x => x.id === pSel.value);
+      if (p) updateModels(p);
+    });
+
+    // Nudge provider/model — default to Groq if available, else first provider
+    const nSel = document.getElementById('nudgeProviderSelect');
+    nSel.innerHTML = '';
+    providers.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.id; o.textContent = p.name;
+      nSel.appendChild(o);
+    });
+    const nudgeProvider = settings.nudge_provider
+      || (providers.find(p => p.id === 'groq') ? 'groq' : (providers[0] && providers[0].id));
+    if (nudgeProvider) nSel.value = nudgeProvider;
+    updateNudgeModels(providers.find(p => p.id === nSel.value), settings.nudge_model);
+
+    nSel.addEventListener('change', () => {
+      const p = providers.find(x => x.id === nSel.value);
+      updateNudgeModels(p);
+      saveNudgeSettings();
+    });
+    document.getElementById('nudgeModelSelect').addEventListener('change', saveNudgeSettings);
+  } catch(e) { console.error('loadProviders:', e); }
+}
+
+function updateModels(provider) {
+  const mSel = document.getElementById('modelSelect');
+  mSel.innerHTML = '';
+  (provider.models || []).forEach(m => {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = m.split('/').pop();
+    if (m === provider.current_model) o.selected = true;
+    mSel.appendChild(o);
+  });
+}
+
+function updateNudgeModels(provider, preferred) {
+  const sel = document.getElementById('nudgeModelSelect');
+  sel.innerHTML = '';
+  if (!provider) return;
+  const models = provider.models || [];
+  // Sensible default for Groq: llama-3.1-8b-instant (fastest). Fallback: current_model.
+  const fallback = (provider.id === 'groq' && models.includes('llama-3.1-8b-instant'))
+    ? 'llama-3.1-8b-instant' : provider.current_model;
+  const target = preferred || fallback;
+  models.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = m.split('/').pop();
+    if (m === target) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+async function saveNudgeSettings() {
+  const provider = document.getElementById('nudgeProviderSelect').value;
+  const model = document.getElementById('nudgeModelSelect').value;
+  if (!provider || !model) return;
+  try {
+    await fetch('/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nudge_provider: provider, nudge_model: model }),
+    });
+  } catch(e) { console.error('saveNudgeSettings:', e); }
+}
+
+// ── Generate All ───────────────────────────────
+async function runGenerate(regenerate) {
+  if (!currentBook || generating) return;
+  generating = true;
+  const btn = document.getElementById(regenerate ? 'regenerateBtn' : 'generateBtn');
+  const otherBtn = document.getElementById(regenerate ? 'generateBtn' : 'regenerateBtn');
+  btn.disabled = true; otherBtn.disabled = true;
+  btn.textContent = 'Generating…';
+
+  document.getElementById('progressWrap').style.display = 'block';
+  document.getElementById('openBtnWrap').style.display = 'none';
+  setStatus('generateStatus', 'Starting…', 'info');
+
+  // Poll saved prompt count while generate-all runs in background
+  let lastCount = 0;
+  pollInterval = setInterval(async () => {
+    try {
+      const r = await fetch(`/prompts/${currentBook}`);
+      const data = await r.json();
+      const count = Array.isArray(data) ? data.length : 0;
+      if (count !== lastCount) {
+        lastCount = count;
+        const pct = totalSegments ? (count / totalSegments) * 100 : 0;
+        document.getElementById('progressBar').style.width = pct + '%';
+        document.getElementById('progressLabel').textContent =
+          `${count} / ${totalSegments} prompts generated`;
+      }
+    } catch(e) {}
+  }, 3000);
+
+  try {
+    const res = await fetch('/generate-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        book: currentBook,
+        provider: document.getElementById('providerSelect').value,
+        model: document.getElementById('modelSelect').value,
+        style: document.getElementById('styleSelect').value,
+        regenerate: regenerate,
+      }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    clearInterval(pollInterval);
+    document.getElementById('progressBar').style.width = '100%';
+
+    const failed = (data.results || []).filter(r => r.error);
+    const succeeded = data.count - failed.length;
+    document.getElementById('progressLabel').textContent =
+      `${succeeded} / ${totalSegments} prompts generated` +
+      (failed.length ? ` (${failed.length} failed)` : '');
+
+    if (failed.length) {
+      setStatus('generateStatus', `Done with ${failed.length} failure(s). See below.`, 'warn');
+      renderFailedSegments(failed);
+    } else {
+      setStatus('generateStatus', 'All prompts saved.', 'ok');
+    }
+    document.getElementById('openBtnWrap').style.display = 'block';
+  } catch(e) {
+    clearInterval(pollInterval);
+    setStatus('generateStatus', `Error: ${e.message}`, 'err');
+  } finally {
+    generating = false;
+    btn.disabled = false; otherBtn.disabled = false;
+    btn.textContent = regenerate ? 'Regenerate All' : 'Generate Prompts';
+  }
+}
+document.getElementById('generateBtn').addEventListener('click', () => runGenerate(false));
+document.getElementById('regenerateBtn').addEventListener('click', () => runGenerate(true));
+
+function renderSegmentBreakdown(segments) {
+  const card = document.getElementById('segBreakdown');
+  const list = document.getElementById('segList');
+
+  if (!segments.length) { card.style.display = 'none'; return; }
+
+  list.innerHTML = segments.map((s, i) => {
+    const num = s.segment_number ?? i + 1;
+    const pages = s.page_range ? `pp ${s.page_range[0]}–${s.page_range[1]}` : '';
+    const reason = s.boundary_reason || '';
+
+    return `<div class="seg-row">
+      <div class="seg-header">
+        <span class="seg-num">#${num}</span>
+        ${pages ? `<span class="badge" style="color:#555">${pages}</span>` : ''}
+      </div>
+      ${reason ? `<div class="boundary-reason">${esc(reason)}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  card.style.display = 'block';
+}
+
+function renderFailedSegments(failed) {
+  const wrap = document.getElementById('failedSegments');
+  if (!failed.length) { wrap.style.display = 'none'; return; }
+
+  wrap.innerHTML = `<div style="color:#c97f30; font-size:0.8rem; margin-bottom:6px">
+    Failed segments (click to retry individually):
+  </div>` + failed.map(f => `
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px">
+      <span style="font-size:0.78rem; color:#888">Segment ${f.segment_number}</span>
+      <span style="font-size:0.72rem; color:#e05555; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap"
+            title="${esc(f.error)}">${esc(f.error)}</span>
+      <button style="font-size:0.72rem; padding:2px 10px; background:none; border:1px solid #555; color:#aaa; border-radius:3px; cursor:pointer"
+              onclick="retrySegment(${f.segment_number}, this)">Retry</button>
+    </div>`).join('');
+  wrap.style.display = 'block';
+}
+
+async function retrySegment(segNum, btn) {
+  btn.disabled = true;
+  btn.textContent = '…';
+  try {
+    const segRes = await fetch(`/segments/${currentBook}/${segNum}/text`).then(r => r.json());
+    const res = await fetch('/generate-prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: segRes.text,
+        book: currentBook,
+        segment_number: segNum,
+        provider: document.getElementById('providerSelect').value,
+        model: document.getElementById('modelSelect').value,
+        style: document.getElementById('styleSelect').value,
+      }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    // Save the result
+    await fetch('/save-prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        book: currentBook,
+        segment_number: segNum,
+        prompt: data.prompt,
+        negative_prompt: data.negative_prompt,
+        bpm: data.bpm,
+      }),
+    });
+
+    // Remove this row from the failed list
+    btn.closest('div').remove();
+    btn.textContent = 'Done';
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Retry';
+    btn.title = e.message;
+  }
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function openReader() {
+  if (!currentBook) return;
+  window.location.href = `/reader?book=${currentBook}`;
+}
+
+function selectExistingBookForGeneration(slug) {
+  currentBook = slug;
+  setStatus('splitStatus', `Selected existing book: ${slug}`, 'ok');
+  document.getElementById('generateCard').style.display = 'block';
+  document.getElementById('openBtnWrap').style.display = 'block';
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('progressLabel').textContent = '';
+  document.getElementById('generateStatus').textContent = '';
+  document.getElementById('failedSegments').style.display = 'none';
+
+  fetch(`/segments/${currentBook}`)
+    .then(r => r.json())
+    .then(data => {
+      totalSegments = Array.isArray(data) ? data.length : 0;
+      setStatus('generateStatus', `${totalSegments} segment(s) ready for prompt generation.`, 'info');
+    })
+    .catch(e => setStatus('generateStatus', `Could not load segments: ${e.message}`, 'err'));
+
+  document.getElementById('generateCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+loadProviders();
+loadExistingBooks();
+
+async function loadExistingBooks() {
+  try {
+    const res = await fetch('/segments');
+    const books = await res.json();
+    const list = document.getElementById('existingBooksList');
+    const card = document.getElementById('existingBooksCard');
+    if (!books.length) { card.style.display = 'none'; return; }
+    list.innerHTML = '';
+    books.forEach(slug => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid #1e1e30;';
+      row.innerHTML = `
+        <div style="flex:1; color:#ccc; font-family:monospace; font-size:0.85rem;">${esc(slug)}</div>
+        <button class="btn-sec" data-slug="${esc(slug)}" data-mode="generate">Generate</button>
+        <button class="btn-sec" data-slug="${esc(slug)}" data-mode="open">Open →</button>
+      `;
+      list.appendChild(row);
+    });
+    card.style.display = 'block';
+    list.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-slug]');
+      if (!btn) return;
+      currentBook = btn.dataset.slug;
+      if (btn.dataset.mode === 'generate') {
+        selectExistingBookForGeneration(btn.dataset.slug);
+      } else {
+        openReader();
+      }
+    });
+  } catch(e) { console.error('loadExistingBooks:', e); }
+}
+</script>
+</body>
+</html>

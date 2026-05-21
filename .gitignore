@@ -1,0 +1,8 @@
+uploads/
+segments/
+prompts/
+__pycache__/
+*.pyc
+venv/
+.env
+settings.json

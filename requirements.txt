@@ -1,0 +1,10 @@
+flask
+google-genai
+groq
+pydantic
+requests
+PyMuPDF
+numpy
+sounddevice
+aiohttp
+anthropic
